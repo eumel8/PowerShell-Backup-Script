@@ -22,6 +22,7 @@
 # MB an.
 # Nur die Werte unter Variables ändern
 # Ändere den Logginglevel zu 3 und erhalte die gesamte Ausgabe im PS Fenster
+# Version XX    NEW: Encrypt backup files with uniq password
 # Version 1.4
 #               NEW: 7ZIP Support
 #               FIX: Ordering at old Backup deletion
@@ -287,6 +288,9 @@ if ($CheckDir -eq $false) {
         if ($Use7ZIP)
         {
             Logging "INFO" "Use 7ZIP"
+            [Reflection.Assembly]::LoadWithPartialName("System.Web")
+            $password = [System.Web.Security.Membership]::GeneratePassword(16,2)
+
             if (-not (test-path "$env:ProgramFiles\7-Zip\7z.exe")) {Logging "WARNING" "7Zip not found"} 
             set-alias sz "$env:ProgramFiles\7-Zip\7z.exe" 
             #sz a -t7z "$directory\$zipfile" "$directory\$name"    
@@ -294,7 +298,7 @@ if ($CheckDir -eq $false) {
             if ($UseStaging -and $Zip)
             {
                 $Zip=$Staging+("\"+$Backupdir.Replace($Staging,'').Replace('\','')+".zip")
-                sz a -t7z $Zip $Backupdir
+                sz a -t7z $('-p' + $password) $Zip $Backupdir
                 
                 Logging "INFO" "Move Zip to Destination"
                 Move-Item -Path $Zip -Destination $Destination
@@ -308,7 +312,7 @@ if ($CheckDir -eq $false) {
             }
             else
             {
-                sz a -t7z ($Destination+("\"+$Backupdir.Replace($Destination,'').Replace('\','')+".zip")) $Backupdir
+                sz a -t7z $('-p' + $password) ($Destination+("\"+$Backupdir.Replace($Destination,'').Replace('\','')+".zip")) $Backupdir
             }
                 
         }
@@ -335,7 +339,8 @@ if ($CheckDir -eq $false) {
     }
 }
 
-Write-Host "Press any key to close ..."
+Write-Host $password
+Write-Host "Save password and Press any key to close ..."
 
 $x = $host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
 
